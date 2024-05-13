@@ -1,3 +1,10 @@
+## To be developed   
+
+- [ ] Finish report generator and persistence
+
+- [ ] Consult scans of scans finished previously
+
+
 ## Application Usage Documentation
 
 ### Deployment
@@ -28,6 +35,8 @@
 
 6. The application should now be up and running, ready to accept requests.
 
+---
+
 ### Usage
 
 #### Starting a Scan
@@ -46,8 +55,29 @@
 
 #### Viewing Scan Results
 
-1. Upon receiving the response from the `/scan` endpoint, you can view the scan results for each URL.
+1. Upon receiving the response from the `/scan/{scan-id}` endpoint, you can view the scan results for each URL.
 2. The scan results will include information such as vulnerabilities detected, scan duration, and any other relevant details.
 3. You can use these scan results to assess the security posture of the scanned URLs and take appropriate actions to mitigate any identified risks.
 
 ---
+
+
+### Zaproxy and testing envronment deployment 
+
+1. **Building and Running**: To deploy your application using Docker Compose, navigate to the directory containing your `docker-compose.yml` file in your terminal or command prompt and run the following command:
+
+   ```
+   docker-compose up --build
+   ```
+
+   This command will build the Docker images for your application and the ZAP Proxy, create the necessary containers, and start them.
+
+2. **Accessing the Application**: Once the containers are up and running, you can access your application at `http://localhost:8080`.
+
+3. **Stopping the Application**: To stop the application and shut down the containers, press `Ctrl + C` in the terminal where Docker Compose is running. Alternatively, you can run the following command:
+
+   ```
+   docker-compose down
+   ```
+
+   This will stop and remove the containers created by Docker Compose.
