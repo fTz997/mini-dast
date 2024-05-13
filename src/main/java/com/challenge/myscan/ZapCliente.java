@@ -1,17 +1,12 @@
 package com.challenge.myscan;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import org.zaproxy.clientapi.core.ClientApi;
@@ -26,9 +21,6 @@ public class ZapCliente {
     private static final String ZAP_ADDRESS = "localhost";
     private static final int ZAP_PORT = 8090;
     private static final String ZAP_API_KEY = null; // Adicione sua chave API do ZAP aqui
-
-    @Autowired
-    private Environment env;
 
     private ClientApi clientApi;
 
@@ -49,7 +41,7 @@ public class ZapCliente {
             clientApi.core.setMode("attack");
     
             addURLToScanTree(targetUrl);
-    
+
             clientApi.spider.setOptionParseComments(true);
             clientApi.spider.setOptionPostForm(true);
             clientApi.spider.setOptionProcessForm(true);
@@ -70,9 +62,8 @@ public class ZapCliente {
     
             performActiveScan(targetUrl);
     
-            String report = generateReport(targetUrl, "Report");
+            // String report = generateReport(targetUrl, "Report");
 
-            // saveReportToDatabase(report);
             return "Scan finalizado em: " + targetUrl + " - ID "+ scanId.toString();
 
         } catch (Exception e) {
@@ -114,24 +105,19 @@ public class ZapCliente {
     
     public void performActiveScan(String targetUrl) throws ClientApiException, InterruptedException {
         String scanPolicyName = "St-Ins-Th-Med";
-
         clientApi.ascan.setOptionHandleAntiCSRFTokens(true);
         clientApi.ascan.setOptionThreadPerHost(15);
         clientApi.ascan.setOptionHostPerScan(10);
         clientApi.ascan.setOptionRescanInAttackMode(true);
         clientApi.ascan.setOptionPromptInAttackMode(true);
         clientApi.ascan.enableAllScanners(null);
-    
         clientApi.ascan.scan(targetUrl, "true", "false", scanPolicyName, null, null);
              
     }
     
     private String generateReport(String targetUrl, String name) {
         String reportFilename = name + ".html";
-
         try {
-
-
             clientApi.reports.generate(
                     "Demo Title",
                     "traditional-html-plus",
