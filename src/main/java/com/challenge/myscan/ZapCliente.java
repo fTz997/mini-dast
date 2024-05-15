@@ -1,9 +1,5 @@
 package com.challenge.myscan;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +14,7 @@ import org.zaproxy.clientapi.core.ApiResponseList;
 @Component
 public class ZapCliente {
 
-    private static final String ZAP_ADDRESS = "localhost";
+    private static final String ZAP_ADDRESS = "localhost"; 
     private static final int ZAP_PORT = 8090;
     private static final String ZAP_API_KEY = null; // Adicione sua chave API do ZAP aqui
 
@@ -34,67 +30,79 @@ public class ZapCliente {
 
     public String startScan(String targetUrl) {
         try {
-            String maxChildren = "0";
-            String recurse = "true";
-            String subTree = "true";
-                        
+            // Iniciar a varredura com o ZAP Proxy
+
+            String regex = targetUrl + "/.*?/node_modules/.*";
+
             clientApi.core.setMode("attack");
-    
-            addURLToScanTree(targetUrl);
 
             clientApi.spider.setOptionParseComments(true);
-            clientApi.spider.setOptionPostForm(true);
             clientApi.spider.setOptionProcessForm(true);
+            clientApi.spider.setOptionPostForm(true);
             clientApi.spider.setOptionSendRefererHeader(true);
             clientApi.spider.setOptionParseDsStore(true);
             clientApi.spider.setOptionAcceptCookies(true);
             clientApi.spider.setOptionParseRobotsTxt(true);
-            clientApi.spider.setOptionParseSitemapXml(true);
-            clientApi.spider.setOptionRequestWaitTime(2500);
-            clientApi.spider.excludeFromScan("^(?!.*//node_modules//).*$");
+            // clientApi.spider.setOptionParseSitemapXml(true);
+            clientApi.spider.setOptionHandleODataParametersVisited(true);
+            clientApi.spider.setOptionShowAdvancedDialog(true);
+            clientApi.spider.excludeFromScan(regex);
+            // clientApi.spider.setOptionThreadCount(64);
+            clientApi.spider.setOptionRequestWaitTime(1000);
             clientApi.spider.setOptionUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0");
-            clientApi.pscan.scanOnlyInScope();
             clientApi.pscan.enableAllScanners();
             clientApi.pscan.enableAllTags();
-            ApiResponse response = clientApi.spider.scan(targetUrl, maxChildren, recurse, null, subTree);
-    
-            String scanId = ((ApiResponseElement) response).getValue();
-    
+            clientApi.pscan.scanOnlyInScope();
+
+            ApiResponse response = clientApi.spider.scan(targetUrl, "0", "true", null, "false");
+            // String scanId = ((ApiResponseElement) response).getValue();
+
+            // Verificar o progresso da varredura
+            // int progress = 0;
+            // while (progress < 100) {
+            //     try {
+            //         Thread.sleep(5000); // Aguardar 5 segundos
+            //     } catch (InterruptedException e) {
+            //         Thread.currentThread().interrupt();
+            //     }
+            //     progress = Integer.parseInt(clientApi.spider.status(scanId).toString());
+            //     System.out.println("Progresso da varredura: " + progress + "%");
+            // }
+
+            // Ajax spider
+            clientApi.ajaxSpider.setOptionClickElemsOnce(true);
+            clientApi.ajaxSpider.setOptionClickDefaultElems(true);
+            clientApi.ajaxSpider.setOptionRandomInputs(true);
+            clientApi.ajaxSpider.setOptionEventWait(3000);
+            clientApi.ajaxSpider.setOptionMaxCrawlDepth(0);
+            // clientApi.ajaxSpider.scan(targetUrl, "false", null, "true");
+            
+
+            // String ajaxSp = clientApi.ajaxSpider.status().toString();
+            // while (ajaxSp.equals("running")) {
+            //     Thread.sleep(10000);
+            //     System.out.println("Em execução");
+
+            // }
+
+            addURLToScanTree(targetUrl);
+
+            
             performActiveScan(targetUrl);
-    
-            // String report = generateReport(targetUrl, "Report");
 
-            return "Scan finalizado em: " + targetUrl + " - ID "+ scanId.toString();
-
+            // Retorna o resultado da varredura
+            return "Varredura concluída para o URL: " + targetUrl ;
         } catch (Exception e) {
             e.printStackTrace();
             return "Erro ao iniciar a varredura: " + e.getMessage();
         }
-        
     }
-    
+
     public void addURLToScanTree(String targetUrl) throws Exception {
-        try {
-            URL obj = new URL("http://"+ZAP_ADDRESS+":"+ZAP_PORT+"/JSON/core/action/accessUrl/?url=" + targetUrl);
-            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-            con.setRequestMethod("GET");
-            int responseCode = con.getResponseCode();
-            
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-            
-            if (!(responseCode == HttpURLConnection.HTTP_OK)) {
-                throw new RuntimeException("Falha ao adicionar URL à árvore de varredura. Código de resposta: " + responseCode);
-            } 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Erro ao adicionar URL à árvore de varredura: " + e.getMessage());
-        }
+        clientApi.core.accessUrl(targetUrl, "false");
+        if(getUrlsFromScanTree().contains(targetUrl)) System.out.println(targetUrl+ " has been added to scan tree");
+        else throw new RuntimeException(targetUrl +" not added to scan tree, active scan will not be possible");
+        
     }
     
     public List<String> getUrlsFromScanTree() throws ClientApiException {
@@ -104,40 +112,42 @@ public class ZapCliente {
     }
     
     public void performActiveScan(String targetUrl) throws ClientApiException, InterruptedException {
-        String scanPolicyName = "St-Ins-Th-Med";
+        String scanPolicyName = "St-Ins-Th-High";
         clientApi.ascan.setOptionHandleAntiCSRFTokens(true);
-        clientApi.ascan.setOptionThreadPerHost(15);
-        clientApi.ascan.setOptionHostPerScan(10);
+        clientApi.ascan.setOptionThreadPerHost(64);
+        clientApi.ascan.setOptionHostPerScan(64);
         clientApi.ascan.setOptionRescanInAttackMode(true);
         clientApi.ascan.setOptionPromptInAttackMode(true);
+        clientApi.ascan.setOptionShowAdvancedDialog(true);
         clientApi.ascan.enableAllScanners(null);
+        clientApi.network.setConnectionTimeout("8");
         clientApi.ascan.scan(targetUrl, "true", "false", scanPolicyName, null, null);
-             
+        System.out.println("fim");
     }
     
-    private String generateReport(String targetUrl, String name) {
-        String reportFilename = name + ".html";
-        try {
-            clientApi.reports.generate(
-                    "Demo Title",
-                    "traditional-html-plus",
-                    "dark",
-                    null,
-                    null,
-                    targetUrl,
-                    "chart|alertcount|passingrules|instancecount|statistics|alertdetails",
-                    null,
-                    "High|Medium|Low",
-                    reportFilename,
-                    null,
-                    null, // Use the absolute path here
-                    "true"
-            );
-            return "ok";
-        } catch (ClientApiException e) {
-            e.printStackTrace();
-            return "Error generating report: " + e.getMessage();
-        }
-    }
+    // private String generateReport(String targetUrl, String name) {
+    //     String reportFilename = name + ".html";
+    //     try {
+    //         clientApi.reports.generate(
+    //                 "Demo Title",
+    //                 "traditional-html-plus",
+    //                 "dark",
+    //                 null,
+    //                 null,
+    //                 targetUrl,
+    //                 "chart|alertcount|passingrules|instancecount|statistics|alertdetails",
+    //                 null,
+    //                 "High|Medium|Low",
+    //                 reportFilename,
+    //                 null,
+    //                 null, // Use the absolute path here
+    //                 "true"
+    //         );
+    //         return "ok";
+    //     } catch (ClientApiException e) {
+    //         e.printStackTrace();
+    //         return "Error generating report: " + e.getMessage();
+    //     }
+    // }
     
 }

@@ -2,6 +2,8 @@ package com.challenge.myscan.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,20 +20,22 @@ public class ScanController {
     @Autowired
     private ZapCliente zapClient;
 
+    private ExecutorService executorService = Executors.newFixedThreadPool(5); 
+
     @PostMapping("/scan")
     public ResponseEntity<String> startScan(@RequestBody Map<String, List<String>> requestBody) throws ClientApiException {
-        // Extrair a lista de URLs do corpo da requisição
         List<String> urls = requestBody.get("urls");
-    
-        StringBuilder scanResults = new StringBuilder();
-    
-        // Iterar sobre cada URL e iniciar a varredura com o ZAP Proxy
-        for (String url : urls) {
-            String scanResult = zapClient.startScan(url);
-            scanResults.append(scanResult).append("\n");
-        }
-    
-        return ResponseEntity.ok(scanResults.toString());
-    }
 
+        StringBuilder responseBuilder = new StringBuilder();
+
+        for (String url : urls) {
+            executorService.submit(() -> zapClient.startScan(url));
+
+            responseBuilder.append("Scan iniciado, o tempo médio de espera é de 15 minutos por host ").append(url).append("\n");
+        }
+
+        executorService.shutdown();
+
+        return ResponseEntity.ok(responseBuilder.toString());
+    }
 }
