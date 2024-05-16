@@ -2,9 +2,11 @@
 
 - [x] Consult scans in progress
 
-- [ ] Persist into a database, the results of each scan. Access made informing the scan id
+- [ ] Persist into MySQL, the results of each scan.
       
-- [x] Retrieve data from scans finished
+- [x] Retrieve data from all scans finished 
+
+- [ ]  Access the "details" of a particular scan using their id as a parameter
 
 - [ ] (?)
 
