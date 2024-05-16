@@ -1,9 +1,12 @@
 ## To be developed   
 
-- [ ] Finish report generator and persistence
+- [ ] Consult scans in progress
 
-- [ ] Consult scans of scans finished previously
+- [ ] Persist into a database, the results of each scan. Access made informing the scan id
+      
+- [ ] Retrieve data from scans finished
 
+- [ ] (?)
 
 ## Application Usage Documentation
 
