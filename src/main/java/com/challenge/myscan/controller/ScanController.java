@@ -1,16 +1,21 @@
 package com.challenge.myscan.controller;
-
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.zaproxy.clientapi.core.ClientApiException;
+import org.zaproxy.clientapi.core.ApiResponse;
+import org.zaproxy.clientapi.core.ApiResponseList;
+import org.zaproxy.clientapi.core.ApiResponseSet;
 
 import com.challenge.myscan.ZapCliente;
 
@@ -37,5 +42,22 @@ public class ScanController {
         executorService.shutdown();
 
         return ResponseEntity.ok(responseBuilder.toString());
+    }
+
+    @GetMapping("/scan")
+    public ResponseEntity<?> getActiveScans() {
+        try {
+            ApiResponseList scans = (ApiResponseList) zapClient.getClientApi().ascan.scans();
+            
+            List<Collection<ApiResponse>> activeScans = scans.getItems().stream()
+                .filter(item -> item instanceof ApiResponseSet)
+                .map(item -> (ApiResponseSet) item)
+                .map(scan -> scan.getValues())
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(activeScans);
+        } catch (ClientApiException e) {
+            return ResponseEntity.status(500).body("Error retrieving active scans: " + e.getMessage());
+        }
     }
 }
