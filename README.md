@@ -1,10 +1,10 @@
 ## To be developed   
 
-- [ ] Consult scans in progress
+- [x] Consult scans in progress
 
 - [ ] Persist into a database, the results of each scan. Access made informing the scan id
       
-- [ ] Retrieve data from scans finished
+- [x] Retrieve data from scans finished
 
 - [ ] (?)
 
